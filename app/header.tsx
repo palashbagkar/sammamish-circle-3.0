@@ -36,6 +36,7 @@ export default function Header() {
           <Link href="/submit" className="nav-link">Submit a Resource</Link>
           <Link href="/about" className="nav-link">About</Link>
           <Link href="/references" className="nav-link">References</Link>
+          <Link href="/crisis" className="nav-link" style={{ color: "#F87171" }}>Crisis</Link>
           <Link href="/" className="nav-link">ENG
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M7.5 8.25L4.625 5.375L3.75 6.25L7.5 10L11.25 6.25L10.375 5.375L7.5 8.25Z" fill="#F5EDED"/>
