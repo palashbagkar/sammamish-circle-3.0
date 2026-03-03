@@ -19,11 +19,27 @@ export default function Footer() {
               <li><Link href="/directory">Resources</Link></li>
               <li><Link href="/submit">Submit a Resource</Link></li>
               <li><Link href="/about">About</Link></li>
+                <li><Link href="/forum">Forum</Link></li>
+                <li><Link href="/crisis">Crisis Support</Link></li>
+                <li><Link href="/references">References</Link></li>
+                <li><Link href="/login">Login</Link></li>
+                <li><Link href="/register">Register</Link></li>
+                <li><Link href="/dashboard">Dashboard</Link></li>
             </ul>
           </div>
 
+            {/* additional column for contact information */}
+            <div className="footer-contact-column">
+              <h4 className="footer-column-title">Contact Us</h4>
+              <ul className="footer-contact-list">
+                <li>Email: <a href="mailto:info@sammamishcircle.org">info@sammamishcircle.org</a></li>
+                <li>Phone: <a href="tel:+12065551234">(206) 555‑1234</a></li>
+                <li>Address: 123 Community Ave, Sammamish, WA</li>
+              </ul>
+            </div>
+
           <div className="footer-social-column">
-            <h4 className="footer-social-title">Connect with Us</h4>
+            <h4 className="footer-column-title">Connect with Us</h4>
             <div className="footer-social-icons">
               <a
                 href="https://facebook.com"

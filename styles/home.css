@@ -450,7 +450,8 @@
 
 .footer-columns {
   display: grid;
-  grid-template-columns: 1fr 280px 280px;
+  /* four columns: brand, links, contact, social */
+  grid-template-columns: 1fr 200px 200px 200px;
   gap: 48px;
   margin-bottom: 48px;
 }
@@ -484,6 +485,34 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.footer-contact-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-contact-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #9CA3AF;
+}
+
+.footer-contact-list a {
+  color: #9CA3AF;
+  text-decoration: none;
+}
+
+.footer-contact-list a:hover {
+  color: #FFF;
 }
 
 .footer-column-title {
