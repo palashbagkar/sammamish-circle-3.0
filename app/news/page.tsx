@@ -297,7 +297,7 @@ function SubmitStoryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
 
             {/* Preview card */}
             <div style={{ background: "rgba(96,141,141,0.35)", borderRadius: 12, padding: 24 }}>
-              <h3 style={{ color: "white", fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 600, margin: "0 0 12px", color: "rgba(255,255,255,0.6)" }}>Preview</h3>
+              <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 600, margin: "0 0 12px", color: "rgba(255,255,255,0.6)" }}>Preview</h3>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 {(form.image || true) && (
                   <div style={{ width: 80, height: 60, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.1)" }}>
