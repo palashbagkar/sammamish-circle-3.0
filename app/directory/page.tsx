@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import Header from "../header";
@@ -18,8 +18,110 @@ const TYPE_COLORS: Record<string, string> = {
   Workshop: "#A78BFA",
 };
 
+// ── Shared localStorage helpers ────────────────────────────────────────────
+function loadJSON<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function saveJSON(key: string, val: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+interface Collection { id: string; name: string; resourceIds: number[]; }
+
+// ── Collection picker popover ──────────────────────────────────────────────
+function CollectionPicker({
+  resourceId,
+  collections,
+  onToggle,
+  onCreate,
+  onClose,
+}: {
+  resourceId: number;
+  collections: Collection[];
+  onToggle: (colId: string) => void;
+  onCreate: (name: string) => void;
+  onClose: () => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} style={{
+      position: "absolute", top: 44, right: 0, zIndex: 100,
+      background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12,
+      boxShadow: "0 8px 24px rgba(0,0,0,0.12)", padding: "8px 0", minWidth: 210,
+    }}>
+      <div style={{ padding: "6px 14px 4px", fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        Add to Collection
+      </div>
+      {collections.length === 0 && (
+        <div style={{ padding: "8px 14px", fontSize: 13, color: "#9CA3AF" }}>No collections yet</div>
+      )}
+      {collections.map((col) => {
+        const inCol = col.resourceIds.includes(resourceId);
+        return (
+          <button
+            key={col.id}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggle(col.id); }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              width: "100%", padding: "9px 14px", border: "none",
+              background: inCol ? "rgba(36,71,71,0.06)" : "transparent",
+              cursor: "pointer", fontFamily: "'Inter',sans-serif", fontSize: 13,
+              color: inCol ? "#244747" : "#374151", fontWeight: inCol ? 600 : 400, textAlign: "left",
+            }}
+          >
+            <span>{col.name}</span>
+            {inCol && (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 7L5.5 10.5L12 3.5" stroke="#244747" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        );
+      })}
+      <div style={{ borderTop: "1px solid #F3F4F6", margin: "6px 0 0", padding: "8px 10px" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) { onCreate(newName.trim()); setNewName(""); } }}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            placeholder="New collection…"
+            style={{
+              flex: 1, padding: "7px 10px", border: "1px solid #E5E7EB", borderRadius: 8,
+              fontSize: 13, fontFamily: "'Inter',sans-serif", color: "#374151", outline: "none",
+            }}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); e.preventDefault();
+              if (newName.trim()) { onCreate(newName.trim()); setNewName(""); }
+            }}
+            style={{
+              background: "#244747", color: "#fff", border: "none", borderRadius: 8,
+              padding: "7px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              fontFamily: "'Inter',sans-serif",
+            }}
+          >+</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calendar view ──────────────────────────────────────────────────────────
 function CalendarView({ resources }: { resources: typeof RESOURCES }) {
-  const [month, setMonth] = useState(2); // March = 2
+  const [month, setMonth] = useState(2);
   const [year, setYear] = useState(2026);
 
   const firstDay = new Date(year, month, 1).getDay();
@@ -30,6 +132,9 @@ function CalendarView({ resources }: { resources: typeof RESOURCES }) {
     return resources.filter((r) => {
       if (r.schedule === "wed" && dow === 3) return true;
       if (r.schedule === "sat" && dow === 6) return true;
+      if (r.schedule === "tue" && dow === 2) return true;
+      if (r.schedule === "thu" && dow === 4) return true;
+      if (r.schedule === "fri" && dow === 5) return true;
       if (r.schedule === "mon-wed" && (dow === 1 || dow === 3)) return true;
       if (/^\d{4}-\d{2}-\d{2}$/.test(r.schedule)) {
         const [y, m, d] = r.schedule.split("-").map(Number);
@@ -96,6 +201,7 @@ function CalendarView({ resources }: { resources: typeof RESOURCES }) {
   );
 }
 
+// ── Main page ──────────────────────────────────────────────────────────────
 export default function DirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
@@ -106,6 +212,69 @@ export default function DirectoryPage() {
   const [showCostFilter, setShowCostFilter] = useState(false);
   const [showTagsFilter, setShowTagsFilter] = useState(false);
   const [view, setView] = useState<"list" | "calendar">("list");
+
+  // Save & collections
+  const [savedIds, setSavedIds] = useState<number[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [pickerOpenId, setPickerOpenId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSavedIds(loadJSON<number[]>("sc_saved_resources", []));
+    setCollections(loadJSON<Collection[]>("sc_collections", []));
+  }, []);
+
+  const toggleSave = (id: number) => {
+    setSavedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      saveJSON("sc_saved_resources", next);
+      if (prev.includes(id)) {
+        // unsaving — remove from all collections
+        setCollections((cols) => {
+          const updated = cols.map((c) => ({ ...c, resourceIds: c.resourceIds.filter((r) => r !== id) }));
+          saveJSON("sc_collections", updated);
+          return updated;
+        });
+      }
+      return next;
+    });
+  };
+
+  const toggleCollection = (resourceId: number, colId: string) => {
+    setSavedIds((prev) => {
+      if (!prev.includes(resourceId)) {
+        const next = [...prev, resourceId];
+        saveJSON("sc_saved_resources", next);
+        return next;
+      }
+      return prev;
+    });
+    setCollections((prev) => {
+      const updated = prev.map((c) =>
+        c.id === colId
+          ? { ...c, resourceIds: c.resourceIds.includes(resourceId) ? c.resourceIds.filter((r) => r !== resourceId) : [...c.resourceIds, resourceId] }
+          : c
+      );
+      saveJSON("sc_collections", updated);
+      return updated;
+    });
+  };
+
+  const createCollection = (resourceId: number, name: string) => {
+    const col: Collection = { id: Date.now().toString(), name, resourceIds: [resourceId] };
+    setSavedIds((prev) => {
+      if (!prev.includes(resourceId)) {
+        const next = [...prev, resourceId];
+        saveJSON("sc_saved_resources", next);
+        return next;
+      }
+      return prev;
+    });
+    setCollections((prev) => {
+      const updated = [...prev, col];
+      saveJSON("sc_collections", updated);
+      return updated;
+    });
+  };
 
   const allTags = Array.from(new Set(RESOURCES.flatMap((r) => r.tags))).sort();
   const toggleTag = (tag: string) => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
@@ -122,6 +291,33 @@ export default function DirectoryPage() {
 
   return (
     <div className="directory-page">
+      <style>{`
+        .dir-action-bar {
+          display: flex; align-items: center; gap: 6px; margin-left: auto;
+          position: relative; flex-shrink: 0;
+        }
+        .dir-icon-btn {
+          width: 32px; height: 32px; border-radius: 8px; border: 1px solid #E5E7EB;
+          background: #fff; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: all 0.15s; color: #9CA3AF; font-size: 16px; flex-shrink: 0;
+        }
+        .dir-icon-btn:hover { border-color: #244747; color: #244747; }
+        .dir-icon-btn.saved { background: #244747; border-color: #244747; color: #ECC22D; }
+        .dir-col-btn {
+          height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #E5E7EB;
+          background: #fff; display: flex; align-items: center; gap: 5px;
+          cursor: pointer; transition: all 0.15s; color: #6B7280;
+          font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap;
+        }
+        .dir-col-btn:hover { border-color: #244747; color: #244747; }
+        .dir-col-btn.has-cols { border-color: #244747; color: #244747; background: rgba(36,71,71,0.05); }
+        .dir-col-label {
+          font-size: 11px; color: #244747; background: rgba(36,71,71,0.08);
+          border-radius: 6px; padding: 2px 8px; font-weight: 600; white-space: nowrap;
+          max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+        }
+      `}</style>
+
       <Header />
       <main className="directory-main">
         <section className="directory-hero">
@@ -213,38 +409,87 @@ export default function DirectoryPage() {
               ) : (
                 <div className="directory-layout">
                   <div className="resources-list">
-                    {filteredResources.length > 0 ? filteredResources.map(resource => (
-                      <Link key={resource.id} href={`/directory/${resource.id}`} style={{ textDecoration: "none" }}>
-                        <div className="resource-card-directory" onMouseEnter={() => setHoveredResource(resource.id)} onMouseLeave={() => setHoveredResource(null)}>
-                          <div className="resource-card-image-container">
-                            <img src={resource.image} alt={resource.title} className="resource-card-image" />
-                          </div>
-                          <div className="resource-card-content">
-                            <div className="resource-card-header">
-                              <span className="resource-type-badge">{resource.type}</span>
-                            </div>
-                            <h3 className="resource-card-title">{resource.title}</h3>
-                            <div className="resource-card-details">
-                              <div className="resource-detail-item">
-                                <svg className="detail-icon" width="16" height="16" viewBox="0 0 13 14" fill="none"><path d="M2.625 0.875V1.75H1.3125C0.587891 1.75 0 2.33789 0 3.0625V4.375H12.25V3.0625C12.25 2.33789 11.6621 1.75 10.9375 1.75H9.625V0.875C9.625 0.391016 9.23398 0 8.75 0C8.26602 0 7.875 0.391016 7.875 0.875V1.75H4.375V0.875C4.375 0.391016 3.98398 0 3.5 0C3.01602 0 2.625 0.391016 2.625 0.875ZM12.25 5.25H0V12.6875C0 13.4121 0.587891 14 1.3125 14H10.9375C11.6621 14 12.25 13.4121 12.25 12.6875V5.25Z" fill="#0EA5E9" /></svg>
-                                <span className="detail-text">{resource.date} • {resource.time}</span>
+                    {filteredResources.length > 0 ? filteredResources.map(resource => {
+                      const isSaved = savedIds.includes(resource.id);
+                      const resourceCols = collections.filter((c) => c.resourceIds.includes(resource.id));
+                      return (
+                        <div key={resource.id} style={{ position: "relative" }}>
+                          <Link href={`/directory/${resource.id}`} style={{ textDecoration: "none" }}>
+                            <div
+                              className="resource-card-directory"
+                              onMouseEnter={() => setHoveredResource(resource.id)}
+                              onMouseLeave={() => setHoveredResource(null)}
+                            >
+                              <div className="resource-card-image-container">
+                                <img src={resource.image} alt={resource.title} className="resource-card-image" />
                               </div>
-                              <div className="resource-detail-item">
-                                <svg className="detail-icon" width="16" height="16" viewBox="0 0 11 14" fill="none"><path d="M5.89805 13.65C7.30078 11.8945 10.5 7.63984 10.5 5.25C10.5 2.35156 8.14844 0 5.25 0C2.35156 0 0 2.35156 0 5.25C0 7.63984 3.19922 11.8945 4.60195 13.65C4.93828 14.0684 5.56172 14.0684 5.89805 13.65ZM5.25 3.5C5.71413 3.5 6.15925 3.68437 6.48744 4.01256C6.81563 4.34075 7 4.78587 7 5.25C7 5.71413 6.81563 6.15925 6.48744 6.48744C6.15925 6.81563 5.71413 7 5.25 7C4.78587 7 4.34075 6.81563 4.01256 6.48744C3.68437 6.15925 3.5 5.71413 3.5 5.25C3.5 4.78587 3.68437 4.34075 4.01256 4.01256C4.34075 3.68437 4.78587 3.5 5.25 3.5Z" fill="#10B981" /></svg>
-                                <span className="detail-text">{resource.location}</span>
-                              </div>
-                              <div className="resource-detail-item">
-                                <svg className="detail-icon" width="16" height="16" viewBox="0 0 16 14" fill="none"><path d="M1.75 1.75C0.784766 1.75 0 2.53477 0 3.5V5.25C0 5.49062 0.202344 5.6793 0.429297 5.75859C0.943359 5.93633 1.3125 6.42578 1.3125 7C1.3125 7.57422 0.943359 8.06367 0.429297 8.24141C0.202344 8.3207 0 8.50938 0 8.75V10.5C0 11.4652 0.784766 12.25 1.75 12.25H14C14.9652 12.25 15.75 11.4652 15.75 10.5V8.75C15.75 8.50938 15.5477 8.3207 15.3207 8.24141C14.8066 8.06367 14.4375 7.57422 14.4375 7C14.4375 6.42578 14.8066 5.93633 15.3207 5.75859C15.5477 5.6793 15.75 5.49062 15.75 5.25V3.5C15.75 2.53477 14.9652 1.75 14 1.75H1.75Z" fill="#F59E0B" /></svg>
-                                <span className="detail-text cost-text">{resource.cost}</span>
+                              <div className="resource-card-content">
+                                <div className="resource-card-header">
+                                  <span className="resource-type-badge">{resource.type}</span>
+                                  {resourceCols.length > 0 && (
+                                    <span className="dir-col-label">{resourceCols.map(c => c.name).join(", ")}</span>
+                                  )}
+                                  {/* Action buttons — stop propagation so Link doesn't navigate */}
+                                  <div className="dir-action-bar" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                    <button
+                                      className={`dir-icon-btn${isSaved ? " saved" : ""}`}
+                                      onClick={() => toggleSave(resource.id)}
+                                      title={isSaved ? "Remove from saved" : "Save resource"}
+                                    >
+                                      {isSaved ? "★" : "☆"}
+                                    </button>
+                                    <button
+                                      className={`dir-col-btn${resourceCols.length > 0 ? " has-cols" : ""}`}
+                                      onClick={() => setPickerOpenId(pickerOpenId === resource.id ? null : resource.id)}
+                                      title="Add to collection"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                        <rect x="0.5" y="0.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="7" y="0.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="0.5" y="7" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="7" y="7" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                      </svg>
+                                      Collection
+                                    </button>
+                                  </div>
+                                </div>
+                                <h3 className="resource-card-title">{resource.title}</h3>
+                                <div className="resource-card-details">
+                                  <div className="resource-detail-item">
+                                    <svg className="detail-icon" width="16" height="16" viewBox="0 0 13 14" fill="none"><path d="M2.625 0.875V1.75H1.3125C0.587891 1.75 0 2.33789 0 3.0625V4.375H12.25V3.0625C12.25 2.33789 11.6621 1.75 10.9375 1.75H9.625V0.875C9.625 0.391016 9.23398 0 8.75 0C8.26602 0 7.875 0.391016 7.875 0.875V1.75H4.375V0.875C4.375 0.391016 3.98398 0 3.5 0C3.01602 0 2.625 0.391016 2.625 0.875ZM12.25 5.25H0V12.6875C0 13.4121 0.587891 14 1.3125 14H10.9375C11.6621 14 12.25 13.4121 12.25 12.6875V5.25Z" fill="#0EA5E9" /></svg>
+                                    <span className="detail-text">{resource.date} • {resource.time}</span>
+                                  </div>
+                                  <div className="resource-detail-item">
+                                    <svg className="detail-icon" width="16" height="16" viewBox="0 0 11 14" fill="none"><path d="M5.89805 13.65C7.30078 11.8945 10.5 7.63984 10.5 5.25C10.5 2.35156 8.14844 0 5.25 0C2.35156 0 0 2.35156 0 5.25C0 7.63984 3.19922 11.8945 4.60195 13.65C4.93828 14.0684 5.56172 14.0684 5.89805 13.65ZM5.25 3.5C5.71413 3.5 6.15925 3.68437 6.48744 4.01256C6.81563 4.34075 7 4.78587 7 5.25C7 5.71413 6.81563 6.15925 6.48744 6.48744C6.15925 6.81563 5.71413 7 5.25 7C4.78587 7 4.34075 6.81563 4.01256 6.48744C3.68437 6.15925 3.5 5.71413 3.5 5.25C3.5 4.78587 3.68437 4.34075 4.01256 4.01256C4.34075 3.68437 4.78587 3.5 5.25 3.5Z" fill="#10B981" /></svg>
+                                    <span className="detail-text">{resource.location}</span>
+                                  </div>
+                                  <div className="resource-detail-item">
+                                    <svg className="detail-icon" width="16" height="16" viewBox="0 0 16 14" fill="none"><path d="M1.75 1.75C0.784766 1.75 0 2.53477 0 3.5V5.25C0 5.49062 0.202344 5.6793 0.429297 5.75859C0.943359 5.93633 1.3125 6.42578 1.3125 7C1.3125 7.57422 0.943359 8.06367 0.429297 8.24141C0.202344 8.3207 0 8.50938 0 8.75V10.5C0 11.4652 0.784766 12.25 1.75 12.25H14C14.9652 12.25 15.75 11.4652 15.75 10.5V8.75C15.75 8.50938 15.5477 8.3207 15.3207 8.24141C14.8066 8.06367 14.4375 7.57422 14.4375 7C14.4375 6.42578 14.8066 5.93633 15.3207 5.75859C15.5477 5.6793 15.75 5.49062 15.75 5.25V3.5C15.75 2.53477 14.9652 1.75 14 1.75H1.75Z" fill="#F59E0B" /></svg>
+                                    <span className="detail-text cost-text">{resource.cost}</span>
+                                  </div>
+                                </div>
+                                <div className="resource-tags">
+                                  {resource.tags.map(tag => <span key={tag} className="resource-tag-chip">{tag}</span>)}
+                                </div>
                               </div>
                             </div>
-                            <div className="resource-tags">
-                              {resource.tags.map(tag => <span key={tag} className="resource-tag-chip">{tag}</span>)}
+                          </Link>
+
+                          {/* Collection picker rendered outside the Link */}
+                          {pickerOpenId === resource.id && (
+                            <div style={{ position: "absolute", top: 8, right: 8, zIndex: 200 }}>
+                              <CollectionPicker
+                                resourceId={resource.id}
+                                collections={collections}
+                                onToggle={(colId) => toggleCollection(resource.id, colId)}
+                                onCreate={(name) => createCollection(resource.id, name)}
+                                onClose={() => setPickerOpenId(null)}
+                              />
                             </div>
-                          </div>
+                          )}
                         </div>
-                      </Link>
-                    )) : (
+                      );
+                    }) : (
                       <div className="no-results-message">
                         <p>No resources found matching your criteria.</p>
                         <button className="reset-filters-button" onClick={resetFilters}>Clear Filters</button>

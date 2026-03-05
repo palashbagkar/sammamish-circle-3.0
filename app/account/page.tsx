@@ -2,15 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../header";
 import Footer from "../footer";
-
-const RESOURCES = [
-  { id: 1, title: "Sammamish Farmers Market", type: "Event", date: "Every Wednesday", time: "3:00 PM – 8:00 PM", location: "Upper Sammamish Commons", tags: ["Community", "Food", "Family"] },
-  { id: 2, title: "Volunteer @ Sammamish Landing", type: "Volunteering", date: "Sat, Feb 2", time: "9:00 AM – 12:00 PM", location: "Sammamish Landing", tags: ["Environment", "Volunteering"] },
-  { id: 3, title: "Coffee with Council", type: "Event", date: "Thu, Jan 28", time: "10:00 AM – 11:30 AM", location: "City Hall", tags: ["Government", "Networking"] },
-  { id: 4, title: "Youth Soccer Program", type: "Program", date: "Every Saturday", time: "10:00 AM – 12:00 PM", location: "Marymoor Park", tags: ["Youth", "Sports"] },
-  { id: 5, title: "iCode Intro to Coding", type: "Workshop", date: "Fri, Feb 5", time: "6:00 PM – 8:00 PM", location: "iCode Sammamish", tags: ["Education"] },
-  { id: 6, title: "Senior Fitness Classes", type: "Program", date: "Mon & Wed", time: "9:00 AM – 10:00 AM", location: "Sammamish YMCA", tags: ["Seniors", "Health"] },
-];
+import { RESOURCES } from "../directory/data";
 
 interface HourEntry {
   id: string;
@@ -20,218 +12,568 @@ interface HourEntry {
   notes: string;
 }
 
-const TABS = ["Volunteer Hours", "Events & Activities", "Saved Resources", "My Goals"];
+interface ProfileData {
+  name: string;
+  bio: string;
+  location: string;
+  email: string;
+}
+
+interface Collection {
+  id: string;
+  name: string;
+  resourceIds: number[];
+}
+
+const TABS = [
+  { label: "Saved Resources", icon: "★" },
+  { label: "Volunteer Hours", icon: "◷" },
+  { label: "Past Events", icon: "✓" },
+];
+
+function loadJSON<T>(key: string, fallback: T): T {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function saveJSON(key: string, val: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState(0);
 
-  // Volunteer hours
+  const [profile, setProfile] = useState<ProfileData>({ name: "", bio: "", location: "", email: "" });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<ProfileData>({ name: "", bio: "", location: "", email: "" });
+
   const [hourEntries, setHourEntries] = useState<HourEntry[]>([]);
   const [showHourForm, setShowHourForm] = useState(false);
   const [hourForm, setHourForm] = useState({ activity: "", date: "", hours: "", notes: "" });
 
-  // Events
   const [attendedIds, setAttendedIds] = useState<number[]>([]);
-
-  // Saved
   const [savedIds, setSavedIds] = useState<number[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
-  // Goals
-  const [goalHours, setGoalHours] = useState(0);
-  const [goalInput, setGoalInput] = useState("");
+  // Saved Resources tab sub-state
+  const [activeColId, setActiveColId] = useState<string | null>(null); // null = "All Saved"
+  const [newColName, setNewColName] = useState("");
 
   useEffect(() => {
     try {
-      const h = localStorage.getItem("sc_volunteer_hours");
-      if (h) setHourEntries(JSON.parse(h));
-      const a = localStorage.getItem("sc_attended_events");
-      if (a) setAttendedIds(JSON.parse(a));
-      const s = localStorage.getItem("sc_saved_resources");
-      if (s) setSavedIds(JSON.parse(s));
-      const g = localStorage.getItem("sc_volunteer_goal");
-      if (g) setGoalHours(Number(g));
+      const p = localStorage.getItem("sc_profile");
+      if (p) { const parsed = JSON.parse(p); setProfile(parsed); setProfileDraft(parsed); }
+      setHourEntries(loadJSON<HourEntry[]>("sc_volunteer_hours", []));
+      setAttendedIds(loadJSON<number[]>("sc_attended_events", []));
+      setSavedIds(loadJSON<number[]>("sc_saved_resources", []));
+      setCollections(loadJSON<Collection[]>("sc_collections", []));
     } catch {}
   }, []);
 
-  const save = (key: string, val: unknown) => localStorage.setItem(key, JSON.stringify(val));
+  const saveProfile = () => {
+    setProfile(profileDraft);
+    saveJSON("sc_profile", profileDraft);
+    setEditingProfile(false);
+  };
 
   const totalHours = hourEntries.reduce((s, e) => s + e.hours, 0);
 
-  const addEntry = () => {
+  const addHourEntry = () => {
     if (!hourForm.activity || !hourForm.date || !hourForm.hours) return;
     const entry: HourEntry = { id: Date.now().toString(), activity: hourForm.activity, date: hourForm.date, hours: Number(hourForm.hours), notes: hourForm.notes };
     const updated = [entry, ...hourEntries];
     setHourEntries(updated);
-    save("sc_volunteer_hours", updated);
+    saveJSON("sc_volunteer_hours", updated);
     setHourForm({ activity: "", date: "", hours: "", notes: "" });
     setShowHourForm(false);
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteHourEntry = (id: string) => {
     const updated = hourEntries.filter((e) => e.id !== id);
     setHourEntries(updated);
-    save("sc_volunteer_hours", updated);
+    saveJSON("sc_volunteer_hours", updated);
   };
 
   const toggleAttended = (id: number) => {
     const updated = attendedIds.includes(id) ? attendedIds.filter((i) => i !== id) : [...attendedIds, id];
     setAttendedIds(updated);
-    save("sc_attended_events", updated);
+    saveJSON("sc_attended_events", updated);
   };
 
-  const toggleSaved = (id: number) => {
-    const updated = savedIds.includes(id) ? savedIds.filter((i) => i !== id) : [...savedIds, id];
-    setSavedIds(updated);
-    save("sc_saved_resources", updated);
+  const unsaveResource = (id: number) => {
+    const next = savedIds.filter((x) => x !== id);
+    setSavedIds(next);
+    saveJSON("sc_saved_resources", next);
+    // Remove from all collections
+    const updatedCols = collections.map((c) => ({ ...c, resourceIds: c.resourceIds.filter((r) => r !== id) }));
+    setCollections(updatedCols);
+    saveJSON("sc_collections", updatedCols);
+    // Reset active col if it becomes empty
+    if (activeColId) {
+      const col = updatedCols.find((c) => c.id === activeColId);
+      if (col && col.resourceIds.length === 0) setActiveColId(null);
+    }
   };
 
-  const setGoal = () => {
-    const val = Number(goalInput);
-    if (!val || val <= 0) return;
-    setGoalHours(val);
-    save("sc_volunteer_goal", val);
-    setGoalInput("");
+  const createCollection = () => {
+    if (!newColName.trim()) return;
+    const col: Collection = { id: Date.now().toString(), name: newColName.trim(), resourceIds: [] };
+    const updated = [...collections, col];
+    setCollections(updated);
+    saveJSON("sc_collections", updated);
+    setNewColName("");
   };
 
-  const goalProgress = goalHours > 0 ? Math.min((totalHours / goalHours) * 100, 100) : 0;
-  const sortedResources = [...RESOURCES].sort((a, b) => (attendedIds.includes(b.id) ? 1 : 0) - (attendedIds.includes(a.id) ? 1 : 0));
+  const deleteCollection = (colId: string) => {
+    const updated = collections.filter((c) => c.id !== colId);
+    setCollections(updated);
+    saveJSON("sc_collections", updated);
+    if (activeColId === colId) setActiveColId(null);
+  };
+
+  const toggleResourceInCollection = (colId: string, resourceId: number) => {
+    const updated = collections.map((c) =>
+      c.id === colId
+        ? { ...c, resourceIds: c.resourceIds.includes(resourceId) ? c.resourceIds.filter((r) => r !== resourceId) : [...c.resourceIds, resourceId] }
+        : c
+    );
+    setCollections(updated);
+    saveJSON("sc_collections", updated);
+  };
+
+  const initials = profile.name
+    ? profile.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "?";
+
   const savedResources = RESOURCES.filter((r) => savedIds.includes(r.id));
-  const unsavedResources = RESOURCES.filter((r) => !savedIds.includes(r.id));
+  const attendedResources = RESOURCES.filter((r) => attendedIds.includes(r.id));
+
+  // Resources shown in Saved tab (filtered by active collection or all)
+  const activeCol = collections.find((c) => c.id === activeColId);
+  const displayedSaved = activeColId && activeCol
+    ? savedResources.filter((r) => activeCol.resourceIds.includes(r.id))
+    : savedResources;
 
   return (
     <div className="acc-page">
       <style>{`
-        .acc-page { min-height: 100vh; background: linear-gradient(160deg, #0f2828 0%, #1a3a3a 100%); color: white; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
-        .acc-main { flex: 1; padding: 40px 80px 60px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .acc-page {
+          min-height: 100vh;
+          background: #244747;
+          color: white;
+          font-family: 'Inter', sans-serif;
+          display: flex;
+          flex-direction: column;
+        }
 
-        .acc-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; flex-wrap: wrap; gap: 16px; }
-        .acc-profile-left { display: flex; align-items: center; gap: 18px; }
-        .acc-avatar { width: 60px; height: 60px; border-radius: 50%; background: #FFC300; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #0f2828; flex-shrink: 0; }
-        .acc-pill { display: inline-block; background: #FFC300; color: #0f2828; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; margin-bottom: 4px; }
-        .acc-email { font-size: 13px; color: rgba(255,244,210,0.55); }
-        .acc-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.65); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: 'Inter', sans-serif; transition: all 0.2s; }
-        .acc-logout:hover { border-color: rgba(255,255,255,0.45); color: white; }
+        /* Profile */
+        .acc-profile-hero {
+          padding: 110px 80px 0;
+          max-width: 960px;
+          margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .acc-profile-card {
+          background: rgba(96, 141, 141, 0.4);
+          border-radius: 12px;
+          padding: 32px;
+          display: flex;
+          align-items: flex-start;
+          gap: 28px;
+        }
+        .acc-avatar {
+          width: 80px; height: 80px; border-radius: 50%;
+          background: #ECC22D; display: flex; align-items: center; justify-content: center;
+          font-size: 28px; font-weight: 700; color: #244747; flex-shrink: 0; letter-spacing: -1px;
+        }
+        .acc-profile-body { flex: 1; min-width: 0; }
+        .acc-profile-name {
+          font-family: 'Source Serif Pro', serif; font-size: 28px; font-weight: 600;
+          color: #fff; margin: 0 0 4px; line-height: 1.2;
+        }
+        .acc-profile-name-placeholder {
+          font-family: 'Source Serif Pro', serif; font-size: 28px; font-weight: 600;
+          color: rgba(255,255,255,0.3); margin: 0 0 4px; font-style: italic;
+        }
+        .acc-profile-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+        .acc-profile-meta-item { font-size: 13px; color: rgba(255,255,255,0.6); }
+        .acc-profile-bio { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.6; margin: 0; max-width: 520px; }
+        .acc-profile-bio-placeholder { font-size: 14px; color: rgba(255,255,255,0.35); font-style: italic; }
+        .acc-profile-stats { display: flex; gap: 28px; margin-top: 20px; flex-wrap: wrap; }
+        .acc-stat { display: flex; flex-direction: column; gap: 2px; }
+        .acc-stat-val { font-size: 22px; font-weight: 700; color: #ECC22D; line-height: 1; }
+        .acc-stat-lbl { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.06em; }
+        .acc-profile-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+        .acc-edit-btn {
+          background: #ECC22D; border: none; color: #244747; padding: 12px 28px;
+          border-radius: 9999px; cursor: pointer; font-size: 14px; font-weight: 600;
+          font-family: 'Inter', sans-serif; transition: background 0.2s; white-space: nowrap;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .acc-edit-btn:hover { background: #d4a928; }
+        .acc-profile-edit-form { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .acc-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        .acc-tabs { display: flex; gap: 4px; margin-bottom: 28px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 12px; width: fit-content; flex-wrap: wrap; }
-        .acc-tab { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; transition: all 0.2s; background: transparent; color: rgba(255,244,210,0.5); }
-        .acc-tab.active { background: #FFC300; color: #0f2828; font-weight: 600; }
-        .acc-tab:not(.active):hover { background: rgba(255,255,255,0.08); color: #FFF4D2; }
+        /* Inputs */
+        .acc-inp {
+          width: 100%; padding: 12px 16px; border-radius: 8px; border: none;
+          background: rgba(255,255,255,0.95); color: #333; font-family: 'Inter',sans-serif;
+          font-size: 14px; outline: none; box-sizing: border-box; transition: all 0.2s;
+        }
+        .acc-inp::placeholder { color: #999; }
+        .acc-inp:focus { background: #fff; box-shadow: 0 0 0 3px rgba(236,194,45,0.3); }
+        textarea.acc-inp { resize: vertical; min-height: 80px; line-height: 1.5; }
 
-        .acc-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 28px; }
-        .acc-title { font-family: 'Source Serif Pro', serif; font-size: 22px; color: #FFF4D2; margin: 0 0 4px; }
-        .acc-sub { font-size: 13px; color: rgba(255,244,210,0.45); margin: 0 0 24px; }
+        .acc-edit-btns { display: flex; gap: 10px; }
+        .acc-save-btn {
+          background: #ECC22D; color: #244747; border: none; border-radius: 9999px;
+          padding: 12px 28px; font-size: 14px; font-weight: 600; cursor: pointer;
+          font-family: 'Inter',sans-serif; transition: background 0.2s;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .acc-save-btn:hover { background: #d4a928; }
+        .acc-cancel-btn {
+          background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white;
+          border-radius: 9999px; padding: 12px 20px; font-size: 14px; cursor: pointer;
+          font-family: 'Inter',sans-serif; transition: background 0.2s;
+        }
+        .acc-cancel-btn:hover { background: rgba(255,255,255,0.05); }
+
+        /* Main */
+        .acc-main {
+          flex: 1; padding: 36px 80px 80px; max-width: 960px; margin: 0 auto;
+          width: 100%; box-sizing: border-box;
+        }
+
+        /* Tabs */
+        .acc-tabs {
+          display: flex; gap: 4px; margin-bottom: 28px;
+          background: rgba(96,141,141,0.3); padding: 5px; border-radius: 12px; width: fit-content;
+        }
+        .acc-tab {
+          display: flex; align-items: center; gap: 6px; padding: 9px 20px;
+          border-radius: 8px; border: none; cursor: pointer; font-family: 'Inter',sans-serif;
+          font-size: 13px; font-weight: 500; transition: all 0.2s;
+          background: transparent; color: rgba(255,255,255,0.55);
+        }
+        .acc-tab.active { background: #ECC22D; color: #244747; font-weight: 700; }
+        .acc-tab:not(.active):hover { background: rgba(255,255,255,0.08); color: white; }
+
+        /* Cards */
+        .acc-card { background: rgba(96,141,141,0.4); border-radius: 12px; padding: 32px; }
+        .acc-card-header {
+          display: flex; align-items: flex-start; justify-content: space-between;
+          gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .acc-card-title { font-family: 'Source Serif Pro',serif; font-size: 28px; color: white; margin: 0 0 4px; font-weight: 600; }
+        .acc-card-sub { font-size: 14px; color: rgba(255,255,255,0.7); margin: 0; }
+        .acc-primary-btn {
+          background: #ECC22D; color: #244747; border: none; border-radius: 9999px;
+          padding: 12px 28px; font-size: 14px; font-weight: 600; cursor: pointer;
+          font-family: 'Inter',sans-serif; transition: background 0.2s;
+          white-space: nowrap; flex-shrink: 0;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .acc-primary-btn:hover { background: #d4a928; }
+
+        /* Collections row */
+        .acc-col-pills {
+          display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
+        }
+        .acc-col-pill {
+          padding: 7px 16px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.2);
+          background: transparent; color: rgba(255,255,255,0.65); font-family: 'Inter',sans-serif;
+          font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+          display: flex; align-items: center; gap: 6px;
+        }
+        .acc-col-pill:hover { background: rgba(255,255,255,0.08); color: white; }
+        .acc-col-pill.active { background: #ECC22D; border-color: #ECC22D; color: #244747; font-weight: 700; }
+        .acc-col-pill-del {
+          background: transparent; border: none; color: inherit; cursor: pointer;
+          padding: 0; font-size: 14px; line-height: 1; opacity: 0.6;
+          display: flex; align-items: center;
+        }
+        .acc-col-pill-del:hover { opacity: 1; }
+        .acc-col-create { display: flex; gap: 8px; margin-bottom: 24px; }
+
+        /* Resource grid */
+        .acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+        .acc-rc {
+          background: rgba(255,255,255,0.08); border-radius: 12px; padding: 18px;
+          transition: background 0.2s; display: flex; flex-direction: column;
+        }
+        .acc-rc:hover { background: rgba(255,255,255,0.12); }
+        .acc-rc.is-saved { background: rgba(236,194,45,0.1); }
+        .acc-rc.is-attended { background: rgba(16,185,129,0.1); }
+        .acc-rc-type { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 6px; }
+        .acc-rc-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 6px; line-height: 1.3; }
+        .acc-rc-meta { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 2px; line-height: 1.4; }
+        .acc-rc-tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 10px 0 14px; flex: 1; align-content: flex-start; }
+        .acc-rc-tag { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+        .acc-rc-cols { font-size: 11px; color: #ECC22D; margin-bottom: 8px; font-weight: 600; }
+
+        .acc-toggle-btn {
+          width: 100%; padding: 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+          background: transparent; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
+          cursor: pointer; font-family: 'Inter',sans-serif; transition: all 0.2s;
+          display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .acc-toggle-btn:hover:not(.is-on-saved):not(.is-on-attended) { background: rgba(255,255,255,0.1); color: white; }
+        .acc-toggle-btn.is-on-saved { background: rgba(236,194,45,0.2); border-color: rgba(236,194,45,0.5); color: #ECC22D; }
+        .acc-toggle-btn.is-on-attended { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #10B981; }
 
         /* Hours */
-        .acc-hours-hero { text-align: center; padding: 24px; background: rgba(255,195,0,0.07); border: 1px solid rgba(255,195,0,0.18); border-radius: 12px; margin-bottom: 20px; }
-        .acc-hours-num { font-size: 60px; font-weight: 700; color: #FFC300; line-height: 1; }
-        .acc-hours-lbl { font-size: 13px; color: rgba(255,244,210,0.5); margin-top: 6px; }
-        .acc-add-btn { background: #FFC300; color: #0f2828; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
-        .acc-add-btn:hover { background: #e6b000; }
-        .acc-form { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; margin: 14px 0; display: grid; gap: 10px; }
-        .acc-inp { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.07); color: #FFF4D2; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; box-sizing: border-box; }
-        .acc-inp::placeholder { color: rgba(255,244,210,0.3); }
-        .acc-inp:focus { border-color: rgba(255,195,0,0.45); }
-        .acc-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .acc-form-btns { display: flex; gap: 10px; }
-        .acc-cancel-btn { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,244,210,0.55); border-radius: 8px; padding: 10px 18px; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
-        .acc-entry-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
-        .acc-entry { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 14px; }
-        .acc-entry-date { font-size: 11px; color: rgba(255,244,210,0.4); min-width: 76px; }
-        .acc-entry-name { flex: 1; font-size: 14px; color: #FFF4D2; }
-        .acc-entry-note { font-size: 11px; color: rgba(255,244,210,0.4); margin-top: 2px; }
-        .acc-hrs-badge { background: rgba(255,195,0,0.12); color: #FFC300; border: 1px solid rgba(255,195,0,0.25); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-        .acc-del { background: transparent; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; transition: color 0.2s; }
+        .acc-hours-hero {
+          text-align: center; padding: 28px; background: rgba(236,194,45,0.1);
+          border-radius: 12px; margin-bottom: 20px;
+        }
+        .acc-hours-num { font-size: 64px; font-weight: 700; color: #ECC22D; line-height: 1; }
+        .acc-hours-lbl { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 6px; }
+        .acc-log-form {
+          background: rgba(96,141,141,0.4); border-radius: 12px; padding: 24px;
+          margin: 16px 0; display: flex; flex-direction: column; gap: 12px;
+        }
+        .acc-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .acc-entry-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+        .acc-entry {
+          display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.08);
+          border-radius: 10px; padding: 13px 16px; transition: background 0.2s;
+        }
+        .acc-entry:hover { background: rgba(255,255,255,0.11); }
+        .acc-entry-date { font-size: 11px; color: rgba(255,255,255,0.45); min-width: 76px; flex-shrink: 0; }
+        .acc-entry-name { flex: 1; font-size: 14px; color: white; font-weight: 500; }
+        .acc-entry-note { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+        .acc-hrs-badge { background: rgba(236,194,45,0.18); color: #ECC22D; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .acc-del { background: transparent; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; transition: color 0.2s; flex-shrink: 0; }
         .acc-del:hover { color: #ff6b6b; }
-        .acc-empty { text-align: center; padding: 40px 20px; color: rgba(255,244,210,0.4); font-size: 14px; line-height: 1.6; }
 
-        /* Resource cards */
-        .acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-        .acc-rc { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; transition: border-color 0.2s; }
-        .acc-rc.attended { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.04); }
-        .acc-rc.saved { border-color: rgba(255,195,0,0.25); }
-        .acc-rc-type { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: rgba(255,244,210,0.4); text-transform: uppercase; margin-bottom: 5px; }
-        .acc-rc-title { font-size: 14px; font-weight: 600; color: #FFF4D2; margin-bottom: 6px; }
-        .acc-rc-meta { font-size: 12px; color: rgba(255,244,210,0.45); margin-bottom: 3px; }
-        .acc-rc-tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0 12px; }
-        .acc-rc-tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.06); color: rgba(255,244,210,0.55); border: 1px solid rgba(255,255,255,0.09); }
-        .acc-toggle-btn { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: rgba(255,244,210,0.6); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .acc-toggle-btn.on-attended { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.35); color: #10B981; }
-        .acc-toggle-btn.on-saved { background: rgba(255,195,0,0.1); border-color: rgba(255,195,0,0.35); color: #FFC300; }
-        .acc-toggle-btn:not(.on-attended):not(.on-saved):hover { background: rgba(255,255,255,0.07); color: #FFF4D2; }
-        .acc-section-lbl { font-size: 12px; color: rgba(255,244,210,0.35); margin: 22px 0 10px; }
+        .acc-divider-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin: 28px 0 12px; }
 
-        /* Goals */
-        .acc-goal-box { background: rgba(255,195,0,0.06); border: 1px solid rgba(255,195,0,0.18); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-        .acc-goal-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-        .acc-goal-txt { font-size: 15px; color: rgba(255,244,210,0.7); }
-        .acc-goal-pct { font-size: 24px; font-weight: 700; color: #FFC300; }
-        .acc-bar-wrap { height: 10px; background: rgba(255,255,255,0.07); border-radius: 999px; overflow: hidden; }
-        .acc-bar-fill { height: 100%; border-radius: 999px; background: #FFC300; transition: width 0.6s ease; }
-        .acc-bar-lbls { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: rgba(255,244,210,0.4); }
-        .acc-goal-success { text-align: center; padding: 12px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; margin-top: 12px; color: #10B981; font-size: 14px; font-weight: 600; }
-        .acc-goal-set { display: flex; gap: 10px; align-items: center; margin-top: 20px; }
-        .acc-goal-inp { padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.07); color: #FFF4D2; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; width: 160px; }
-        .acc-goal-inp::placeholder { color: rgba(255,244,210,0.3); }
-        .acc-goal-inp:focus { border-color: rgba(255,195,0,0.45); }
-        .acc-milestones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
-        .acc-ms { text-align: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 14px 8px; }
-        .acc-ms.done { background: rgba(255,195,0,0.08); border-color: rgba(255,195,0,0.25); }
-        .acc-ms-val { font-size: 18px; font-weight: 700; color: rgba(255,244,210,0.25); }
-        .acc-ms.done .acc-ms-val { color: #FFC300; }
-        .acc-ms-lbl { font-size: 11px; color: rgba(255,244,210,0.35); margin-top: 4px; }
-        .acc-ms.done .acc-ms-lbl { color: rgba(255,244,210,0.6); }
+        .acc-empty { text-align: center; padding: 48px 20px; color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.7; }
+        .acc-empty a { color: #ECC22D; }
 
-        @media (max-width: 768px) {
-          .acc-main { padding: 24px 16px 40px; }
-          .acc-form-row { grid-template-columns: 1fr; }
-          .acc-milestones { grid-template-columns: repeat(2, 1fr); }
-          .acc-tabs { width: 100%; }
-          .acc-tab { flex: 1; text-align: center; font-size: 12px; padding: 8px 10px; }
+        @media (max-width: 900px) {
+          .acc-profile-hero, .acc-main { padding-left: 24px; padding-right: 24px; }
+          .acc-profile-hero { padding-top: 90px; }
+          .acc-profile-card { flex-direction: column; }
+          .acc-profile-actions { flex-direction: row; align-self: flex-start; }
+          .acc-form-row, .acc-edit-row { grid-template-columns: 1fr; }
+          .acc-tabs { width: 100%; flex-wrap: wrap; }
+          .acc-tab { flex: 1; min-width: 100px; justify-content: center; font-size: 12px; padding: 8px 10px; }
         }
       `}</style>
 
       <Header />
 
+      {/* Profile */}
+      <div className="acc-profile-hero">
+        <div className="acc-profile-card">
+          <div className="acc-avatar">{initials}</div>
+
+          {editingProfile ? (
+            <div className="acc-profile-edit-form">
+              <div className="acc-edit-row">
+                <input className="acc-inp" placeholder="Full name" value={profileDraft.name} onChange={(e) => setProfileDraft((p) => ({ ...p, name: e.target.value }))} />
+                <input className="acc-inp" placeholder="Email address" value={profileDraft.email} onChange={(e) => setProfileDraft((p) => ({ ...p, email: e.target.value }))} />
+              </div>
+              <input className="acc-inp" placeholder="Location (e.g. Sammamish, WA)" value={profileDraft.location} onChange={(e) => setProfileDraft((p) => ({ ...p, location: e.target.value }))} />
+              <textarea className="acc-inp" placeholder="Short bio — tell the community about yourself…" value={profileDraft.bio} onChange={(e) => setProfileDraft((p) => ({ ...p, bio: e.target.value }))} />
+              <div className="acc-edit-btns">
+                <button className="acc-save-btn" onClick={saveProfile}>Save Profile</button>
+                <button className="acc-cancel-btn" onClick={() => { setProfileDraft(profile); setEditingProfile(false); }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="acc-profile-body">
+              {profile.name ? <h1 className="acc-profile-name">{profile.name}</h1> : <p className="acc-profile-name-placeholder">Your name</p>}
+              <div className="acc-profile-meta">
+                {profile.email && <span className="acc-profile-meta-item">✉ {profile.email}</span>}
+                {profile.location && <span className="acc-profile-meta-item">📍 {profile.location}</span>}
+              </div>
+              {profile.bio ? <p className="acc-profile-bio">{profile.bio}</p> : <p className="acc-profile-bio-placeholder">Add a short bio to introduce yourself to the community.</p>}
+              <div className="acc-profile-stats">
+                <div className="acc-stat"><span className="acc-stat-val">{totalHours}</span><span className="acc-stat-lbl">Hours Volunteered</span></div>
+                <div className="acc-stat"><span className="acc-stat-val">{attendedIds.length}</span><span className="acc-stat-lbl">Events Attended</span></div>
+                <div className="acc-stat"><span className="acc-stat-val">{savedIds.length}</span><span className="acc-stat-lbl">Saved Resources</span></div>
+                <div className="acc-stat"><span className="acc-stat-val">{collections.length}</span><span className="acc-stat-lbl">Collections</span></div>
+              </div>
+            </div>
+          )}
+
+          {!editingProfile && (
+            <div className="acc-profile-actions">
+              <button className="acc-edit-btn" onClick={() => setEditingProfile(true)}>
+                {profile.name ? "Edit Profile" : "Create Profile"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
       <main className="acc-main">
-        {/* Tabs */}
         <div className="acc-tabs">
           {TABS.map((t, i) => (
-            <button key={t} className={`acc-tab${activeTab === i ? " active" : ""}`} onClick={() => setActiveTab(i)}>{t}</button>
+            <button key={t.label} className={`acc-tab${activeTab === i ? " active" : ""}`} onClick={() => setActiveTab(i)}>
+              <span>{t.icon}</span>{t.label}
+            </button>
           ))}
         </div>
 
-        {/* ── Volunteer Hours ── */}
+        {/* ── Saved Resources ── */}
         {activeTab === 0 && (
           <div className="acc-card">
-            <h2 className="acc-title">Volunteer Hours</h2>
-            <p className="acc-sub">Track the time you give back to the community.</p>
+            <div className="acc-card-header">
+              <div>
+                <h2 className="acc-card-title">Saved Resources</h2>
+                <p className="acc-card-sub">Bookmark resources from the directory, then organize them into collections.</p>
+              </div>
+              <a href="/directory" style={{ background: "#ECC22D", color: "#244747", border: "none", borderRadius: "9999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", transition: "background 0.2s", textDecoration: "none", boxShadow: "0 4px 6px rgba(0,0,0,0.1)", whiteSpace: "nowrap", flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
+                Browse Directory →
+              </a>
+            </div>
+
+            {/* Collection pills */}
+            <div className="acc-col-pills">
+              <button
+                className={`acc-col-pill${!activeColId ? " active" : ""}`}
+                onClick={() => setActiveColId(null)}
+              >
+                All Saved ({savedResources.length})
+              </button>
+              {collections.map((col) => (
+                <button
+                  key={col.id}
+                  className={`acc-col-pill${activeColId === col.id ? " active" : ""}`}
+                  onClick={() => setActiveColId(activeColId === col.id ? null : col.id)}
+                >
+                  {col.name} ({col.resourceIds.filter((id) => savedIds.includes(id)).length})
+                  <span
+                    className="acc-col-pill-del"
+                    onClick={(e) => { e.stopPropagation(); deleteCollection(col.id); }}
+                    role="button"
+                    aria-label="Delete collection"
+                  >×</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Create collection */}
+            <div className="acc-col-create">
+              <input
+                className="acc-inp"
+                style={{ flex: 1 }}
+                placeholder="New collection name (e.g. Health, Sports, Arts)…"
+                value={newColName}
+                onChange={(e) => setNewColName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && createCollection()}
+              />
+              <button className="acc-primary-btn" onClick={createCollection}>+ Create</button>
+            </div>
+
+            {/* Resource grid */}
+            {displayedSaved.length === 0 ? (
+              <div className="acc-empty">
+                {activeColId
+                  ? <>This collection is empty.<br /><span style={{ fontSize: 13 }}>Add resources to it using the Collection button on the <a href="/directory">Directory</a>.</span></>
+                  : <>No saved resources yet.<br /><span style={{ fontSize: 13 }}>Click ☆ on any resource in the <a href="/directory">Directory</a> to bookmark it here.</span></>}
+              </div>
+            ) : (
+              <div className="acc-grid">
+                {displayedSaved.map((r) => {
+                  const resourceCols = collections.filter((c) => c.resourceIds.includes(r.id));
+                  return (
+                    <div key={r.id} className="acc-rc is-saved">
+                      <div className="acc-rc-type">{r.type}</div>
+                      <div className="acc-rc-title">{r.title}</div>
+                      <div className="acc-rc-meta">{r.date} · {r.time}</div>
+                      <div className="acc-rc-meta">{r.location}</div>
+                      {resourceCols.length > 0 && (
+                        <div className="acc-rc-cols">In: {resourceCols.map(c => c.name).join(", ")}</div>
+                      )}
+                      <div className="acc-rc-tags">{r.tags.map((t) => <span key={t} className="acc-rc-tag">{t}</span>)}</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <a href={`/directory/${r.id}`} style={{ flex: 1, padding: 9, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "all 0.2s" }}>
+                          View →
+                        </a>
+                        <button
+                          className="acc-toggle-btn is-on-saved"
+                          style={{ flex: 1 }}
+                          onClick={() => unsaveResource(r.id)}
+                        >★ Remove</button>
+                      </div>
+
+                      {/* Collection toggles */}
+                      {collections.length > 0 && (
+                        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 5 }}>
+                          {collections.map((col) => {
+                            const inCol = col.resourceIds.includes(r.id);
+                            return (
+                              <button
+                                key={col.id}
+                                onClick={() => toggleResourceInCollection(col.id, r.id)}
+                                style={{
+                                  padding: "3px 10px", borderRadius: 999,
+                                  border: `1px solid ${inCol ? "rgba(236,194,45,0.5)" : "rgba(255,255,255,0.15)"}`,
+                                  background: inCol ? "rgba(236,194,45,0.15)" : "transparent",
+                                  color: inCol ? "#ECC22D" : "rgba(255,255,255,0.5)",
+                                  fontSize: 11, fontWeight: 600, cursor: "pointer",
+                                  fontFamily: "'Inter',sans-serif", transition: "all 0.2s",
+                                }}
+                              >
+                                {inCol ? "✓ " : "+ "}{col.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Volunteer Hours ── */}
+        {activeTab === 1 && (
+          <div className="acc-card">
+            <div className="acc-card-header">
+              <div>
+                <h2 className="acc-card-title">Volunteer Hours</h2>
+                <p className="acc-card-sub">Track the time you give back to the community.</p>
+              </div>
+              <button className="acc-primary-btn" onClick={() => setShowHourForm((v) => !v)}>
+                {showHourForm ? "Cancel" : "+ Log Hours"}
+              </button>
+            </div>
 
             <div className="acc-hours-hero">
               <div className="acc-hours-num">{totalHours}</div>
               <div className="acc-hours-lbl">total hours volunteered</div>
             </div>
 
-            <button className="acc-add-btn" onClick={() => setShowHourForm((v) => !v)}>
-              {showHourForm ? "Cancel" : "+ Log Hours"}
-            </button>
-
             {showHourForm && (
-              <div className="acc-form">
+              <div className="acc-log-form">
                 <input className="acc-inp" placeholder="Activity name (e.g. Sammamish Landing cleanup)" value={hourForm.activity} onChange={(e) => setHourForm((f) => ({ ...f, activity: e.target.value }))} />
                 <div className="acc-form-row">
                   <input className="acc-inp" type="date" value={hourForm.date} onChange={(e) => setHourForm((f) => ({ ...f, date: e.target.value }))} />
                   <input className="acc-inp" type="number" min="0.5" step="0.5" placeholder="Hours (e.g. 2.5)" value={hourForm.hours} onChange={(e) => setHourForm((f) => ({ ...f, hours: e.target.value }))} />
                 </div>
                 <input className="acc-inp" placeholder="Notes (optional)" value={hourForm.notes} onChange={(e) => setHourForm((f) => ({ ...f, notes: e.target.value }))} />
-                <div className="acc-form-btns">
-                  <button className="acc-add-btn" onClick={addEntry}>Save Entry</button>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button className="acc-save-btn" onClick={addHourEntry}>Save Entry</button>
                   <button className="acc-cancel-btn" onClick={() => setShowHourForm(false)}>Cancel</button>
                 </div>
               </div>
             )}
 
             <div className="acc-entry-list">
-              {hourEntries.length === 0 && <div className="acc-empty">No hours logged yet.<br /><span style={{ fontSize: 13 }}>Click &quot;+ Log Hours&quot; to get started!</span></div>}
+              {hourEntries.length === 0 && (
+                <div className="acc-empty">
+                  No hours logged yet.<br />
+                  <span style={{ fontSize: 13 }}>Click &quot;+ Log Hours&quot; to get started!</span>
+                </div>
+              )}
               {hourEntries.map((e) => (
                 <div key={e.id} className="acc-entry">
                   <div className="acc-entry-date">{e.date}</div>
@@ -240,135 +582,62 @@ export default function AccountPage() {
                     {e.notes && <div className="acc-entry-note">{e.notes}</div>}
                   </div>
                   <div className="acc-hrs-badge">{e.hours}h</div>
-                  <button className="acc-del" onClick={() => deleteEntry(e.id)} aria-label="Delete">×</button>
+                  <button className="acc-del" onClick={() => deleteHourEntry(e.id)} aria-label="Delete">×</button>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Events & Activities ── */}
-        {activeTab === 1 && (
-          <div className="acc-card">
-            <h2 className="acc-title">Events & Activities</h2>
-            <p className="acc-sub">Mark community events and activities you&apos;ve attended.</p>
-            <div className="acc-grid">
-              {sortedResources.map((r) => {
-                const attended = attendedIds.includes(r.id);
-                return (
-                  <div key={r.id} className={`acc-rc${attended ? " attended" : ""}`}>
-                    <div className="acc-rc-type">{r.type}</div>
-                    <div className="acc-rc-title">{r.title}</div>
-                    <div className="acc-rc-meta">{r.date} · {r.time}</div>
-                    <div className="acc-rc-meta">{r.location}</div>
-                    <div className="acc-rc-tags">{r.tags.map((t) => <span key={t} className="acc-rc-tag">{t}</span>)}</div>
-                    <button className={`acc-toggle-btn${attended ? " on-attended" : ""}`} onClick={() => toggleAttended(r.id)}>
-                      {attended ? <><span>✓</span> Attended</> : "Mark as Attended"}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Saved Resources ── */}
+        {/* ── Past Events ── */}
         {activeTab === 2 && (
           <div className="acc-card">
-            <h2 className="acc-title">Saved Resources</h2>
-            <p className="acc-sub">Bookmark resources you want to come back to.</p>
+            <div className="acc-card-header">
+              <div>
+                <h2 className="acc-card-title">Past Events & Activities</h2>
+                <p className="acc-card-sub">Events and resources you&apos;ve marked as attended.</p>
+              </div>
+            </div>
 
-            {savedResources.length === 0
-              ? <div className="acc-empty">No saved resources yet.<br /><span style={{ fontSize: 13 }}>Save resources below or visit the <a href="/directory" style={{ color: "#FFC300" }}>Directory</a>.</span></div>
-              : (
-                <>
-                  <div className="acc-grid">
-                    {savedResources.map((r) => (
-                      <div key={r.id} className="acc-rc saved">
-                        <div className="acc-rc-type">{r.type}</div>
-                        <div className="acc-rc-title">{r.title}</div>
-                        <div className="acc-rc-meta">{r.date} · {r.time}</div>
-                        <div className="acc-rc-meta">{r.location}</div>
-                        <div className="acc-rc-tags">{r.tags.map((t) => <span key={t} className="acc-rc-tag">{t}</span>)}</div>
-                        <button className="acc-toggle-btn on-saved" onClick={() => toggleSaved(r.id)}><span>★</span> Saved — remove</button>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-
-            {unsavedResources.length > 0 && (
+            {attendedResources.length > 0 && (
               <>
-                <p className="acc-section-lbl">All resources — click to save:</p>
                 <div className="acc-grid">
-                  {unsavedResources.map((r) => (
+                  {attendedResources.map((r) => (
+                    <div key={r.id} className="acc-rc is-attended">
+                      <div className="acc-rc-type">{r.type}</div>
+                      <div className="acc-rc-title">{r.title}</div>
+                      <div className="acc-rc-meta">{r.date} · {r.time}</div>
+                      <div className="acc-rc-meta">{r.location}</div>
+                      <div className="acc-rc-tags">{r.tags.map((t) => <span key={t} className="acc-rc-tag">{t}</span>)}</div>
+                      <button className="acc-toggle-btn is-on-attended" onClick={() => toggleAttended(r.id)}>✓ Attended — remove</button>
+                    </div>
+                  ))}
+                </div>
+                <p className="acc-divider-label">Mark more as attended</p>
+              </>
+            )}
+
+            {RESOURCES.filter((r) => !attendedIds.includes(r.id)).length === 0 ? (
+              <div className="acc-empty">You&apos;ve attended everything! Nice work.</div>
+            ) : (
+              <>
+                {attendedResources.length === 0 && (
+                  <div className="acc-empty" style={{ paddingBottom: 16 }}>
+                    Nothing marked as attended yet.<br />
+                    <span style={{ fontSize: 13 }}>Check off events below.</span>
+                  </div>
+                )}
+                <div className="acc-grid">
+                  {RESOURCES.filter((r) => !attendedIds.includes(r.id)).map((r) => (
                     <div key={r.id} className="acc-rc">
                       <div className="acc-rc-type">{r.type}</div>
                       <div className="acc-rc-title">{r.title}</div>
                       <div className="acc-rc-meta">{r.date} · {r.time}</div>
                       <div className="acc-rc-meta">{r.location}</div>
                       <div className="acc-rc-tags">{r.tags.map((t) => <span key={t} className="acc-rc-tag">{t}</span>)}</div>
-                      <button className="acc-toggle-btn" onClick={() => toggleSaved(r.id)}><span>☆</span> Save Resource</button>
+                      <button className="acc-toggle-btn" onClick={() => toggleAttended(r.id)}>Mark as Attended</button>
                     </div>
                   ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── My Goals ── */}
-        {activeTab === 3 && (
-          <div className="acc-card">
-            <h2 className="acc-title">My Goals</h2>
-            <p className="acc-sub">Set a volunteer hours goal and track your progress.</p>
-
-            <div className="acc-goal-box">
-              <div className="acc-goal-row">
-                <div className="acc-goal-txt">
-                  {goalHours > 0 ? `${totalHours} of ${goalHours} hours completed` : "No goal set yet"}
-                </div>
-                {goalHours > 0 && <div className="acc-goal-pct">{Math.round(goalProgress)}%</div>}
-              </div>
-              {goalHours > 0 && (
-                <>
-                  <div className="acc-bar-wrap">
-                    <div className="acc-bar-fill" style={{ width: `${goalProgress}%` }} />
-                  </div>
-                  <div className="acc-bar-lbls"><span>0h</span><span>{goalHours}h</span></div>
-                </>
-              )}
-              {goalProgress >= 100 && (
-                <div className="acc-goal-success">Goal reached! You&apos;ve volunteered {totalHours} hours — amazing work!</div>
-              )}
-            </div>
-
-            <div className="acc-goal-set">
-              <input
-                className="acc-goal-inp"
-                type="number"
-                min="1"
-                placeholder={goalHours > 0 ? `Current: ${goalHours}h` : "e.g. 20"}
-                value={goalInput}
-                onChange={(e) => setGoalInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && setGoal()}
-              />
-              <button className="acc-add-btn" onClick={setGoal}>{goalHours > 0 ? "Update Goal" : "Set Goal"}</button>
-            </div>
-
-            {goalHours > 0 && (
-              <>
-                <p className="acc-section-lbl">Milestones</p>
-                <div className="acc-milestones">
-                  {[25, 50, 75, 100].map((pct) => {
-                    const reached = goalProgress >= pct;
-                    return (
-                      <div key={pct} className={`acc-ms${reached ? " done" : ""}`}>
-                        <div className="acc-ms-val">{reached ? "✓" : `${pct}%`}</div>
-                        <div className="acc-ms-lbl">{Math.round(goalHours * pct / 100)}h</div>
-                      </div>
-                    );
-                  })}
                 </div>
               </>
             )}

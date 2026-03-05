@@ -33,6 +33,7 @@ export default function Header() {
 
         <nav className="nav-menu">
           <Link href="/directory" className="nav-link">Directory</Link>
+          <Link href="/news" className="nav-link">News</Link>
           <Link href="/submit" className="nav-link">Submit a Resource</Link>
           <Link href="/about" className="nav-link">About</Link>
           <Link href="/references" className="nav-link">References</Link>
