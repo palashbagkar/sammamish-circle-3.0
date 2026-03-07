@@ -1,0 +1,20 @@
+{
+    "name": "projects/13342369628992888286",
+    "projectId": "13342369628992888286",
+    "title": "Sammamish Circle Homepage Redesign",
+    "visibility": "PRIVATE",
+    "projectType": "TEXT_TO_UI_PRO",
+    "origin": "STITCH",
+    "deviceType": "DESKTOP",
+    "designTheme": {
+        "colorMode": "DARK",
+        "font": "PLUS_JAKARTA_SANS",
+        "roundness": "ROUND_EIGHT",
+        "customColor": "#FFC300",
+        "saturation": 3
+    },
+    "screens": {},
+    "metadata": {
+        "userRole": "OWNER"
+    }
+}

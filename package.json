@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "framer-motion": "^12.0.0",
     "leaflet": "^1.9.4",
+    "maplibre-gl": "^5.19.0",
     "next": "^15.5.12",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -23,6 +24,8 @@
     "@types/node": "^20.19.30",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "eslint": "^9.39.3",
+    "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4.0.0",
     "typescript": "5.9.3"
   }

@@ -16,14 +16,19 @@ html {
 body {
   margin: 0;
   font-family: 'Lexend', -apple-system, Roboto, Helvetica, sans-serif;
-  background-color: #FFF;
-  color: #000;
+  background-color: #000000;
+  color: #FFFFFF;
   overflow-x: hidden;
 }
 
 /* ===== Typography ===== */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0;
   padding: 0;
 }
@@ -58,14 +63,15 @@ button {
 }
 
 .header-container.scrolled {
-  background: rgba(36, 71, 71, 0.73);
-  backdrop-filter: blur(12px);
+  background: rgba(79, 173, 167, 0.26);
+  backdrop-filter: blur(30px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header-content {
   width: 100%;
   max-width: 1520px;
-  padding: 0 117px;
+  padding: 0 7vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -97,7 +103,7 @@ button {
 
 .logo-text {
   color: #FFF;
-  font-family: 'Source Serif Pro', 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-family: 'Larken', serif;
   font-size: 20px;
   font-weight: 600;
   line-height: 20px;
@@ -125,17 +131,22 @@ button {
 
 .nav-link:hover {
   background: transparent;
-  opacity: 0.8;
+  color: #FFC300;
+  opacity: 1;
 }
 
 /* ===== Form Elements ===== */
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: inherit;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
 }
 
