@@ -1,0 +1,866 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Government Page — Sammamish Circle
+   design.md: Primary #3B6255, CTA #D2C49E, BG #E2DFDA, Accent #CBDED3
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gov-page {
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────── */
+
+.gov-hero {
+  position: relative;
+  height: min(100vh, 920px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.gov-hero-bg {
+  position: absolute;
+  inset: -80px 0 0 0;
+  z-index: 0;
+}
+
+.gov-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(50%) contrast(115%);
+}
+
+/* design.md §1 — Primary tint overlay */
+.gov-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 60%,
+    rgba(59, 98, 85, 0.55) 0%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+.gov-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 0 24px;
+  padding-top: 60px;
+}
+
+/* design.md §1 — CTA color #D2C49E for badge */
+.gov-hero-badge {
+  display: inline-block;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #D2C49E;
+  background: rgba(210, 196, 158, 0.12);
+  border: 1px solid rgba(210, 196, 158, 0.25);
+  border-radius: 9999px;
+  padding: 7px 20px;
+  margin-bottom: 24px;
+}
+
+/* design.md §2 — Source Serif Pro; on dark → #CBDED3 (Accent warm heading) */
+.gov-hero-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: clamp(42px, 8vw, 80px);
+  font-weight: 600;
+  line-height: 1.05;
+  color: #CBDED3;
+  margin-bottom: 16px;
+}
+
+/* design.md §1 — Muted text on dark */
+.gov-hero-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 400;
+  color: rgba(226, 223, 218, 0.6);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.gov-hero-scroll {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(226, 223, 218, 0.35);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.gov-scroll-arrow {
+  font-size: 18px;
+  animation: gov-bounce 2s ease-in-out infinite;
+}
+
+@keyframes gov-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* ── Stats Bar ────────────────────────────────────────────────────────── */
+
+/* design.md §1 — Primary #3B6255 bg */
+.gov-stats-bar {
+  background: #3B6255;
+  border-top: 1px solid rgba(210, 196, 158, 0.15);
+  border-bottom: 1px solid rgba(226, 223, 218, 0.06);
+}
+
+.gov-stats-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 7vw;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.gov-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+/* design.md §1 — CTA color #D2C49E for stat highlights */
+.gov-stat-number {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: #D2C49E;
+  line-height: 1.1;
+}
+
+/* design.md §1 — Muted text on dark */
+.gov-stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(226, 223, 218, 0.5);
+  letter-spacing: 0.03em;
+}
+
+/* ── Section shared ───────────────────────────────────────────────────── */
+
+.gov-section {
+  padding: 100px 0;
+}
+
+.gov-section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 7vw;
+}
+
+.gov-section-header {
+  margin-bottom: 56px;
+}
+
+/* design.md §1 — CTA color for section tags */
+.gov-section-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #D2C49E;
+  margin-bottom: 12px;
+}
+
+/* design.md §2 — Source Serif Pro; on dark → #E2DFDA */
+.gov-section-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 600;
+  color: #E2DFDA;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+
+/* design.md §1 — Muted body on dark */
+.gov-section-desc {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(226, 223, 218, 0.5);
+  max-width: 620px;
+}
+
+/* ── Council Section ──────────────────────────────────────────────────── */
+
+/* design.md §1 — Deep dark gradient */
+.gov-council-section {
+  background: linear-gradient(180deg, #1A2F28 0%, #0d1f1a 100%);
+}
+
+.gov-council-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+/* design.md §17 — Light Glass for council cards */
+.gov-council-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(226, 223, 218, 0.04);
+  border: 1px solid rgba(226, 223, 218, 0.08);
+  transition: all 0.35s ease;
+  cursor: default;
+}
+
+.gov-council-card:hover {
+  border-color: rgba(210, 196, 158, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.gov-council-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 3.4;
+  overflow: hidden;
+}
+
+.gov-council-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(85%) saturate(90%);
+  transition: filter 0.4s ease;
+}
+
+.gov-council-card:hover .gov-council-img {
+  filter: brightness(65%) saturate(70%);
+}
+
+.gov-council-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+.gov-council-bio-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.gov-council-bio-panel p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(226, 223, 218, 0.85);
+  margin: 0;
+}
+
+.gov-council-info {
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* design.md §1 — CTA color for role label */
+.gov-council-role {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #D2C49E;
+}
+
+/* design.md §1 — Heading on dark: #E2DFDA */
+.gov-council-name {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #E2DFDA;
+}
+
+.gov-council-since {
+  font-size: 12px;
+  color: rgba(226, 223, 218, 0.35);
+  margin-top: 2px;
+}
+
+/* ── Bills Section ────────────────────────────────────────────────────── */
+
+.gov-bills-section {
+  background: #000;
+}
+
+.gov-bill-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+/* design.md §6 — Secondary CTA (Outlined) on dark */
+.gov-bill-filter-btn {
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 223, 218, 0.15);
+  background: transparent;
+  color: rgba(226, 223, 218, 0.5);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.gov-bill-filter-btn:hover {
+  border-color: rgba(210, 196, 158, 0.3);
+  color: rgba(226, 223, 218, 0.8);
+}
+
+/* design.md §1 — Active: CTA #D2C49E bg, Primary #3B6255 text */
+.gov-bill-filter-btn.active {
+  background: #D2C49E;
+  border-color: #D2C49E;
+  color: #3B6255;
+}
+
+.gov-bills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* design.md §17 — Light Glass for bill cards */
+.gov-bill-card {
+  background: rgba(226, 223, 218, 0.03);
+  border: 1px solid rgba(226, 223, 218, 0.07);
+  border-radius: 16px;
+  padding: 24px 28px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.gov-bill-card:hover {
+  border-color: rgba(226, 223, 218, 0.14);
+  background: rgba(226, 223, 218, 0.05);
+}
+
+.gov-bill-card.expanded {
+  border-color: rgba(210, 196, 158, 0.18);
+  background: rgba(210, 196, 158, 0.03);
+}
+
+.gov-bill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gov-bill-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gov-bill-category {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.gov-bill-id {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(226, 223, 218, 0.3);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.gov-bill-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+
+/* design.md §2 — Source Serif Pro for section titles; on dark → #E2DFDA */
+.gov-bill-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: #E2DFDA;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.gov-bill-body {
+  overflow: hidden;
+}
+
+.gov-bill-summary {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: rgba(226, 223, 218, 0.55);
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+.gov-bill-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.gov-bill-date {
+  font-size: 12px;
+  color: rgba(226, 223, 218, 0.3);
+}
+
+/* design.md §1 — CTA color for expand hint */
+.gov-bill-expand-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #D2C49E;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gov-bills-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(226, 223, 218, 0.3);
+  font-size: 15px;
+}
+
+/* ── Contribute Section ───────────────────────────────────────────────── */
+
+/* design.md §1 — Dark section gradient */
+.gov-contribute-section {
+  background: linear-gradient(180deg, #1A2F28 0%, #2A4A3F 50%, #1A2F28 100%);
+}
+
+.gov-contribute-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* design.md §17 — Medium Glass for contribute cards */
+.gov-contribute-card {
+  background: rgba(139, 164, 154, 0.08);
+  border: 1px solid rgba(203, 222, 211, 0.12);
+  border-radius: 16px;
+  padding: 36px 32px 32px;
+  transition: all 0.35s ease;
+}
+
+.gov-contribute-card:hover {
+  border-color: rgba(210, 196, 158, 0.2);
+  background: rgba(139, 164, 154, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* design.md §1 — CTA tint for icon containers */
+.gov-contribute-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(210, 196, 158, 0.08);
+  border: 1px solid rgba(210, 196, 158, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* design.md §2 — Source Serif Pro, on dark → #E2DFDA */
+.gov-contribute-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #E2DFDA;
+  margin-bottom: 10px;
+}
+
+.gov-contribute-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(226, 223, 218, 0.45);
+  margin-bottom: 20px;
+}
+
+/* design.md §6 — Ghost button: CTA color text */
+.gov-contribute-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #D2C49E;
+  text-decoration: none;
+  transition: gap 0.25s ease;
+}
+
+.gov-contribute-cta:hover {
+  gap: 10px;
+}
+
+/* ── Meetings Section ─────────────────────────────────────────────────── */
+
+.gov-meetings-section {
+  background: #000;
+}
+
+.gov-meetings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* design.md §17 — Light Glass for meeting rows */
+.gov-meeting-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  background: rgba(226, 223, 218, 0.03);
+  border: 1px solid rgba(226, 223, 218, 0.06);
+  border-radius: 16px;
+  transition: all 0.25s ease;
+}
+
+.gov-meeting-row:hover {
+  border-color: rgba(226, 223, 218, 0.12);
+  background: rgba(226, 223, 218, 0.05);
+}
+
+/* design.md §1 — CTA tint for date blocks */
+.gov-meeting-date-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  padding: 10px 12px;
+  background: rgba(210, 196, 158, 0.08);
+  border: 1px solid rgba(210, 196, 158, 0.12);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+/* design.md §1 — CTA color #D2C49E for meeting day label */
+.gov-meeting-day {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #D2C49E;
+}
+
+/* design.md §2 — Source Serif Pro; on dark → #E2DFDA */
+.gov-meeting-date {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #E2DFDA;
+  white-space: nowrap;
+}
+
+.gov-meeting-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.gov-meeting-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #E2DFDA;
+  margin-bottom: 5px;
+}
+
+.gov-meeting-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.gov-meeting-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: rgba(226, 223, 218, 0.4);
+}
+
+/* design.md §6 — Secondary CTA Outlined: CTA color on dark */
+.gov-meeting-rsvp {
+  padding: 9px 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(210, 196, 158, 0.25);
+  background: transparent;
+  color: #D2C49E;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gov-meeting-rsvp:hover {
+  background: #D2C49E;
+  color: #3B6255;
+  border-color: #D2C49E;
+}
+
+/* ── CTA Section ──────────────────────────────────────────────────────── */
+
+.gov-cta-section {
+  padding: 0 7vw 120px;
+}
+
+/* design.md §1 — Dark section gradient for CTA banner */
+.gov-cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #2A4A3F 0%, #3B6255 50%, #2A4A3F 100%);
+  border: 1px solid rgba(210, 196, 158, 0.12);
+  border-radius: 20px;
+  padding: 72px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.gov-cta-inner::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(210, 196, 158, 0.08) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* design.md §2 — Source Serif Pro; on dark → #E2DFDA */
+.gov-cta-title {
+  font-family: 'Source Serif Pro', serif;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  color: #E2DFDA;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.gov-cta-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(226, 223, 218, 0.5);
+  max-width: 480px;
+  margin: 0 auto 32px;
+  position: relative;
+}
+
+.gov-cta-form {
+  display: flex;
+  gap: 10px;
+  max-width: 460px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* design.md §8 — Text input dark context */
+.gov-cta-input {
+  flex: 1;
+  padding: 14px 22px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 223, 218, 0.20);
+  background: rgba(226, 223, 218, 0.08);
+  color: #E2DFDA;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.gov-cta-input::placeholder {
+  color: rgba(226, 223, 218, 0.40);
+}
+
+.gov-cta-input:focus {
+  border-color: rgba(210, 196, 158, 0.4);
+  background: rgba(226, 223, 218, 0.14);
+  box-shadow: 0 0 0 3px rgba(210, 196, 158, 0.15);
+}
+
+/* design.md §6 — Primary CTA: #D2C49E bg, #3B6255 text */
+.gov-cta-btn {
+  padding: 14px 32px;
+  border-radius: 9999px;
+  border: none;
+  background: #D2C49E;
+  color: #3B6255;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.gov-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(210, 196, 158, 0.3);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .gov-council-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .gov-contribute-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gov-stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gov-hero {
+    height: min(100vh, 700px);
+  }
+
+  .gov-hero-content {
+    padding-top: 80px;
+  }
+
+  .gov-section {
+    padding: 64px 0;
+  }
+
+  .gov-section-header {
+    margin-bottom: 36px;
+  }
+
+  .gov-stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 28px 24px;
+    gap: 20px;
+  }
+
+  .gov-stat-number {
+    font-size: 28px;
+  }
+
+  .gov-council-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .gov-bill-card {
+    padding: 18px 20px;
+  }
+
+  .gov-bill-title {
+    font-size: 16px;
+  }
+
+  .gov-meeting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 20px;
+  }
+
+  .gov-meeting-date-block {
+    flex-direction: row;
+    gap: 8px;
+    width: auto;
+  }
+
+  .gov-meeting-rsvp {
+    width: 100%;
+    text-align: center;
+  }
+
+  .gov-cta-inner {
+    padding: 48px 24px;
+  }
+
+  .gov-cta-form {
+    flex-direction: column;
+  }
+
+  .gov-cta-btn {
+    width: 100%;
+  }
+
+  .gov-contribute-card {
+    padding: 28px 24px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gov-hero {
+    height: min(100vh, 600px);
+  }
+
+  .gov-council-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .gov-stats-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .gov-bill-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gov-section-inner {
+    padding: 0 24px;
+  }
+}
