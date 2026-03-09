@@ -80,7 +80,7 @@ export default function UpcomingEvents() {
                         </span>
                         <h2
                             className="text-4xl md:text-5xl lg:text-6xl text-white mb-4"
-                            style={{ fontFamily: "'Source Serif Pro', 'ui-serif', serif" }}
+                            style={{ fontFamily: "'Noto Serif', serif", fontVariationSettings: "'wdth' 100" }}
                         >
                             What&apos;s Next
                         </h2>
@@ -227,7 +227,7 @@ export default function UpcomingEvents() {
                                     {/* Title */}
                                     <h2
                                         className="text-4xl md:text-5xl text-white mb-6 leading-tight"
-                                        style={{ fontFamily: "'Source Serif Pro', 'ui-serif', serif" }}
+                                        style={{ fontFamily: "'Noto Serif', serif", fontVariationSettings: "'wdth' 100" }}
                                     >
                                         {featured.title}
                                     </h2>

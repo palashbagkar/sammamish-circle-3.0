@@ -19,13 +19,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600&family=Source+Serif+4:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600&family=Source+Serif+4:wght@400;600&family=Inter:wght@400;500;600&family=Noto+Serif:ital,wdth,wght@0,100,100..900;1,100,100..900&display=swap" rel="stylesheet" />
       </head>
       <body>
         <ScrollProgress />
         {children}
         <ChatBot />
-        </body>
+      </body>
     </html>
   );
 }

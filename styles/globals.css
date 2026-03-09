@@ -63,9 +63,8 @@ button {
 }
 
 .header-container.scrolled {
-  background: rgba(79, 173, 167, 0.26);
+  background: #124b5155;
   backdrop-filter: blur(30px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header-content {
@@ -94,7 +93,7 @@ button {
 .logo-diamond {
   width: 16px;
   height: 16px;
-  background: #FFF;
+  background: #dce1e8;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -102,8 +101,8 @@ button {
 }
 
 .logo-text {
-  color: #FFF;
-  font-family: 'Larken', serif;
+  color: #dce1e8;
+  font-family: 'Noto Serif', serif;
   font-size: 20px;
   font-weight: 600;
   line-height: 20px;
@@ -120,7 +119,7 @@ button {
   padding: 10px 16px;
   justify-content: center;
   align-items: center;
-  color: #FFF;
+  color: #dce1e8;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
@@ -131,7 +130,7 @@ button {
 
 .nav-link:hover {
   background: transparent;
-  color: #FFC300;
+  color: #dce1e8d8;
   opacity: 1;
 }
 

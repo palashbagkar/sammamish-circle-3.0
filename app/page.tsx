@@ -1,6 +1,6 @@
 "use client";
-import { useRef, useState, useEffect, useMemo } from "react";
-import { motion, useScroll, useTransform, Variants } from "framer-motion";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { motion, useScroll, useTransform, Variants, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -18,8 +18,15 @@ export default function HomePage() {
   const activeMonth = useMemo(() => getActiveMonth(now), [now]);
   const upcomingEvents = useMemo(() => getUpcomingEvents(now, 7), [now]);
   const featuredEvent = upcomingEvents[0] ?? null;
-  const listEvents = upcomingEvents.slice(1, 5);
-  const featuredImage = "https://lh3.googleusercontent.com/aida-public/AB6AXuBTKjMJW7wylzTpNJV8FJjtkipwWphuHo9n7_VfLEqrNlX73tBTuIwKl7GkJA3C4DddhFv_qcqf5X7-znpQWjsPgVnQsyxbscxqQD9EAjhGNG_r-aMmdA9C2qeZBQvhdanFgM0cwiU4W8phfIaZEuclEBp7NkwMgCAAPnxrx2jazH8OD4L5-1cbWTwltMLAL54G-voJh3EVh9LAL3VRTyP8IWMkNNbd0OH2vL01Szeyd3m4XqDqnTy1YIRhsQj3GZU_8CkjxNOuS8qx";
+  const listEvents = useMemo(() => upcomingEvents.slice(1, 5), [upcomingEvents]);
+  const featuredImage = "https://images.unsplash.com/photo-1653074281018-c08f358059ab?q=80&w=866&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+  // Create a ref for the stack container to track scroll
+  const stackRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: stackScrollY } = useScroll({
+    target: stackRef,
+    offset: ["start 75%", "end 74.5%"]
+  });
 
   // Date formatting helpers
   const fmtDay = (dateStr: string) => new Date(dateStr + "T00:00:00").getDate().toString().padStart(2, "0");
@@ -293,127 +300,97 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Active awareness month banner */}
-          {activeMonth && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              whileHover={{ scale: 1.01 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="events-month-banner"
-            >
-              {/* INTERNAL LIGHTING (The Aura) */}
-              <div
-                className="events-month-aura"
-                style={{
-                  background: `radial-gradient(circle at top right, ${activeMonth.themeColor}26 0%, transparent 60%)`,
-                }}
-              />
-
-              {/* TYPOGRAPHIC HIERARCHY (The Content) */}
-              <div className="events-month-content">
-                <div className="events-month-eyebrow" style={{ color: activeMonth.themeColor }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  Current Awareness Month
-                </div>
-
-                <h3 className="events-month-title">
-                  {activeMonth.title}
-                </h3>
-
-                <div className="events-month-date">
-                  <span>{fmtRange(activeMonth.startDate, activeMonth.endDate)}</span>
-                </div>
-
-                <p className="events-month-desc">
-                  {activeMonth.description}
-                </p>
-              </div>
-            </motion.div>
-          )}
-
           {/* Main Grid: 5-col list + 7-col hero */}
           <div className="events-grid">
-            {/* LEFT: Event List */}
-            <motion.div
-              className="events-list-col"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
-            >
-              {listEvents.map((ev, idx) => {
-                const isFirst = idx === 0;
-                return (
-                  <motion.div
-                    key={ev.id}
-                    variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } } }}
-                    className={`event-list-card ${isFirst ? 'is-first' : 'is-rest'}`}
-                    style={isFirst ? { boxShadow: `0 0 30px ${ev.themeColor}26` } : undefined}
-                  >
-                    <div className="event-list-info">
-                      <div className="event-list-date-badge">
-                        <span className="event-list-day" style={{ color: isFirst ? ev.themeColor : '#FFC300' }}>
-                          {fmtDay(ev.startDate)}
-                        </span>
-                        <span className="event-list-month">
-                          {fmtMonth(ev.startDate)}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="event-list-title">
-                          {ev.title}
-                        </h3>
-                      </div>
+            <div className="events-list-stack-col">
+              {/* Active awareness month banner */}
+              {activeMonth && (
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}
+                  className="events-month-banner"
+                  style={{ marginBottom: '1rem' }}
+                >
+                  <div
+                    className="events-month-aura"
+                    style={{
+                      background: `radial-gradient(circle at top right, ${activeMonth.themeColor}26 0%, transparent 60%)`,
+                    }}
+                  />
+                  <div className="events-month-content">
+                    <div className="events-month-eyebrow" style={{ color: activeMonth.themeColor }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                      Current Awareness Month
                     </div>
-                    <span className="event-list-arrow">›</span>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                    <h3 className="events-month-title">{activeMonth.title}</h3>
+                    <div className="events-month-date">
+                      <span>{fmtRange(activeMonth.startDate, activeMonth.endDate)}</span>
+                    </div>
+                    <p className="events-month-desc">{activeMonth.description}</p>
+                  </div>
+                </motion.div>
+              )}
 
+              <div className="events-list-stack-container" ref={stackRef}>
+                <div className="events-stack-tray-header">
+                  <span className="events-stack-tray-title">This week&apos;s Lineup</span>
+                  <div className="events-stack-tray-line" />
+                </div>
+                {listEvents.map((ev, idx) => (
+                  <EventStackCard
+                    key={ev.id}
+                    ev={ev}
+                    idx={idx}
+                    total={listEvents.length}
+                    scrollYProgress={stackScrollY}
+                  />
+                ))}
+
+                {listEvents.length === 0 && (
+                  <div style={{ padding: '2rem', color: '#94a3b8', textAlign: 'center', border: '1px dashed #ffffff22', borderRadius: '1rem' }}>
+                    No upcoming events found
+                  </div>
+                )}
+              </div>
+            </div>
             {/* RIGHT: Featured Event Hero */}
-            {featuredEvent && (
-              <motion.div
-                className="events-hero-col group"
-                initial={{ opacity: 0, scale: 0.97 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-              >
-                <div className="events-hero-card">
-                  <div className="events-hero-bg" style={{ backgroundImage: `url('${featuredImage}')` }} />
-                  <div className="events-hero-overlay" />
-
-                  <div className="events-hero-content">
+            <div className="events-right-col">
+              {featuredEvent && (
+                <motion.div
+                  className="events-hero-col group"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, ease: 'easeOut' }}
+                >
+                  <div className="events-hero-card">
+                    <div className="events-hero-bg" style={{ backgroundImage: `url('${featuredImage}')` }} />
+                    <div className="events-hero-overlay" />
                     <div className="events-hero-badges">
-                      <span className="events-hero-badge" style={{ background: featuredEvent.themeColor }}>
+                      <span className="events-hero-badge">
                         Featured Event
                       </span>
                       <span className="events-hero-date">
                         {fmtRange(featuredEvent.startDate, featuredEvent.endDate)}
                       </span>
                     </div>
-
-                    <h2 className="events-hero-title">
-                      {featuredEvent.title}
-                    </h2>
-
-                    <p className="events-hero-desc">
-                      {featuredEvent.description}
-                    </p>
-
-                    <div className="events-hero-ctas">
-                      <Link href="/directory" className="events-hero-cta" style={{ background: featuredEvent.themeColor }}>
-                        Learn More
-                      </Link>
+                    <div className="events-hero-content">
+                      <h2 className="events-hero-title">{featuredEvent.title}</h2>
+                      <p className="events-hero-desc">{featuredEvent.description}</p>
+                      <div className="events-hero-ctas">
+                        <Link href="/directory" className="events-hero-cta">
+                          Learn More
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -455,5 +432,98 @@ export default function HomePage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Sub-component to handle individual card scroll animations
+function EventStackCard({
+  ev,
+  idx,
+  total,
+  scrollYProgress,
+}: {
+  ev: any;
+  idx: number;
+  total: number;
+  scrollYProgress: any;
+}) {
+  const zIndex = total - idx;
+
+  // 1.5x wider vertical spread: 18px vs 12px
+  // A little more to make it obvious: 24px
+  const yOffset = idx * 16;
+
+  // Calculate flip animation based on scroll progress
+  // Each card Flips out at a specific point in the scroll
+  const step = 0.8 / total;
+  // Give top cards an earlier start
+  const flipStart = idx * step;
+  const flipEnd = flipStart + (step * 0.8);
+
+  const isLastCard = idx === total - 1;
+
+  // Use motion values to drive the animation
+  // Flips 90 degrees upward
+  const rotateXBase = useTransform(scrollYProgress, [flipStart, flipEnd], [0, 90]);
+  // Fades out as it flips
+  const opacityBase = useTransform(scrollYProgress, [flipStart, flipEnd], [1 - (idx * 0.1), 0]);
+
+  const rotateX = isLastCard ? 0 : rotateXBase;
+  const opacityAnim = isLastCard ? 1 : opacityBase;
+
+  // Content opacity: fade in card text when the card in front flips
+  const prevFlipStart = (idx - 1) * step;
+  const prevFlipEnd = prevFlipStart + (step * 0.8);
+  const contentOpacity = useTransform(
+    scrollYProgress,
+    idx === 0 ? [0, 0] : [prevFlipStart, prevFlipEnd],
+    idx === 0 ? [1, 1] : [0, 1]
+  );
+
+  // Date formatting helpers
+  const fmtDay = (dateStr: string) => new Date(dateStr + "T00:00:00").getDate().toString().padStart(2, "0");
+  const fmtMonth = (dateStr: string) => new Date(dateStr + "T00:00:00").toLocaleString("en-US", { month: "short" }).toUpperCase();
+
+  const colors = ['#44474c', '#33363a', '#24272a', '#1a1c1e', '#121415'];
+  const bgColor = colors[idx] || '#0d0e0f';
+  // All cards are now dark enough that light text is better
+  const textColor = '#e2e8f0';
+  const dateColor = '#FFC300';
+
+  return (
+    <motion.div
+      className="event-list-card"
+      style={{
+        position: 'absolute',
+        top: 80,
+        left: '5%',
+        width: '90%',
+        zIndex,
+        scale: 1,
+        y: yOffset,
+        rotateX,
+        opacity: opacityAnim,
+        backgroundColor: bgColor,
+        color: textColor,
+        transformStyle: 'preserve-3d',
+        transformOrigin: 'top center',
+      }}
+    >
+      <motion.div className="event-list-info" style={{ opacity: contentOpacity }}>
+        <div className="event-list-date-badge">
+          <span className="event-list-day" style={{ color: dateColor }}>
+            {fmtDay(ev.startDate)}
+          </span>
+          <span className="event-list-month" style={{ color: 'inherit', opacity: 0.8 }}>
+            {fmtMonth(ev.startDate)}
+          </span>
+        </div>
+        <div>
+          <h3 className="event-list-title" style={{ color: 'inherit' }}>
+            {ev.title}
+          </h3>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
